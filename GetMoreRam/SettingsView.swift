@@ -60,6 +60,22 @@ struct SettingsView: View {
                     TextField("", text: $sharedModel.anisetteServerURL)
                         .multilineTextAlignment(.trailing)
                 }
+                HStack {
+                    Text("Anisette Client Info")
+                    Spacer()
+                    TextField("Client Info", text: $sharedModel.anisetteClientInfo, axis: .vertical)
+                        .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+                HStack {
+                    Text("Anisette User-Agent")
+                    Spacer()
+                    TextField("User-Agent", text: $sharedModel.anisetteUserAgent, axis: .vertical)
+                        .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
             }
             
             Section {
