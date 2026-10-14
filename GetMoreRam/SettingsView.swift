@@ -15,6 +15,15 @@ struct SettingsView: View {
 
     @State var email = ""
     @State var teamId = ""
+    @State private var draftAnisetteServerURL = "https://ani.sidestore.io"
+    @State private var draftAnisetteClientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
+    @State private var draftAnisetteUserAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+    @State private var settingsSaved = false
+    @FocusState private var focusedAnisetteField: AnisetteField?
+
+    private enum AnisetteField {
+        case serverURL, clientInfo, userAgent
+    }
     @StateObject var viewModel : LoginViewModel
     @EnvironmentObject private var sharedModel : SharedModel
     
@@ -54,36 +63,76 @@ struct SettingsView: View {
             }
             
             Section {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            .frame(width: 52, height: 52)
+                        Image(systemName: "memorychip.fill")
+                            .font(.system(size: 25, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("GetMoreRam")
+                            .font(.headline)
+                        Text("Anisette Configuration")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 6)
+
                 HStack {
                     Text("Anisette Server URL")
                     Spacer()
-                    TextField("", text: $sharedModel.anisetteServerURL)
+                    TextField("Server URL", text: $draftAnisetteServerURL)
                         .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.URL)
+                        .focused($focusedAnisetteField, equals: .serverURL)
                 }
                 HStack {
                     Text("Anisette Client Info")
                     Spacer()
-                    TextField("Client Info", text: $sharedModel.anisetteClientInfo, axis: .vertical)
+                    TextField("Client Info", text: $draftAnisetteClientInfo, axis: .vertical)
                         .multilineTextAlignment(.trailing)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .focused($focusedAnisetteField, equals: .clientInfo)
                 }
                 HStack {
                     Text("Anisette User-Agent")
                     Spacer()
-                    TextField("User-Agent", text: $sharedModel.anisetteUserAgent, axis: .vertical)
+                    TextField("User-Agent", text: $draftAnisetteUserAgent, axis: .vertical)
                         .multilineTextAlignment(.trailing)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .focused($focusedAnisetteField, equals: .userAgent)
+                }
+
+                Button {
+                    saveAnisetteSettings()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("Save Settings", systemImage: "checkmark.circle.fill")
+                        Spacer()
+                    }
+                }
+                .disabled(
+                    draftAnisetteServerURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                    draftAnisetteClientInfo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                    draftAnisetteUserAgent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
+
+                if settingsSaved {
+                    Label("Settings saved", systemImage: "checkmark")
+                        .font(.footnote)
+                        .foregroundStyle(.green)
                 }
             }
-            .onChange(of: sharedModel.anisetteClientInfo) { newValue in
-                AnisetteDataHelper.shared.clientInfo = newValue
-            }
-            .onChange(of: sharedModel.anisetteUserAgent) { newValue in
-                AnisetteDataHelper.shared.userAgent = newValue
-            }
-            
+
             Section {
                 Button("Clean Up Keychain") {
                     cleanUp()
@@ -91,6 +140,11 @@ struct SettingsView: View {
             } footer: {
                 Text("If something went wrong during signing in, please try to clean up the keychain, repoen the app and try again. \n \nIf you use SideStore and are already signed in, please also try exporting SideStore Account from SideStore settings and import it here to sign in.")
             }
+        }
+        .onAppear {
+            draftAnisetteServerURL = sharedModel.anisetteServerURL
+            draftAnisetteClientInfo = sharedModel.anisetteClientInfo
+            draftAnisetteUserAgent = sharedModel.anisetteUserAgent
         }
         .alert("Error", isPresented: $errorShow){
             Button("OK".loc, action: {
@@ -255,6 +309,31 @@ struct SettingsView: View {
         return viewModel.isLoginInProgress
     }
     
+    private func saveAnisetteSettings() {
+        let serverURL = draftAnisetteServerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let clientInfo = draftAnisetteClientInfo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let userAgent = draftAnisetteUserAgent.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let url = URL(string: serverURL),
+              let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              url.host != nil else {
+            errorInfo = "Please enter a valid Anisette Server URL."
+            errorShow = true
+            return
+        }
+
+        sharedModel.anisetteServerURL = serverURL
+        sharedModel.anisetteClientInfo = clientInfo
+        sharedModel.anisetteUserAgent = userAgent
+        AnisetteDataHelper.shared.url = url
+        AnisetteDataHelper.shared.clientInfo = clientInfo
+        AnisetteDataHelper.shared.userAgent = userAgent
+
+        focusedAnisetteField = nil
+        settingsSaved = true
+    }
+
     func cleanUp() {
         Keychain.shared.adiPb = nil
         Keychain.shared.identifier = nil
