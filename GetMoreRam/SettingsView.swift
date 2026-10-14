@@ -77,10 +77,10 @@ struct SettingsView: View {
                         .autocorrectionDisabled()
                 }
             }
-            .onChange(of: sharedModel.anisetteClientInfo) { _, newValue in
+            .onChange(of: sharedModel.anisetteClientInfo) { newValue in
                 AnisetteDataHelper.shared.clientInfo = newValue
             }
-            .onChange(of: sharedModel.anisetteUserAgent) { _, newValue in
+            .onChange(of: sharedModel.anisetteUserAgent) { newValue in
                 AnisetteDataHelper.shared.userAgent = newValue
             }
             
