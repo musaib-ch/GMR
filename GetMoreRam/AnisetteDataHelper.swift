@@ -347,8 +347,14 @@ final class AnisetteDataHelper
         
         self.printOut("Using custom client_info")
                         
-        self.clientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
-        self.userAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+        let defaultClientInfo = "<iMac18,3> <macOS;27.0;26A5378j> <com.apple.AuthKit/1 (com.apple.akd/1.0)>"
+        let defaultUserAgent = "AuthKit/1 (Macintosh; OS X 27.0) (com.apple.akd/1.0)"
+        let savedClientInfo = UserDefaults.standard.string(forKey: "AnisetteClientInfo")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let savedUserAgent = UserDefaults.standard.string(forKey: "AnisetteUserAgent")?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        self.clientInfo = (savedClientInfo?.isEmpty == false) ? savedClientInfo : defaultClientInfo
+        self.userAgent = (savedUserAgent?.isEmpty == false) ? savedUserAgent : defaultUserAgent
         self.printOut("Client-Info: \(self.clientInfo!)")
         self.printOut("User-Agent: \(self.userAgent!)")
         
